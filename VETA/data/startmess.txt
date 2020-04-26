@@ -1,0 +1,2 @@
+Load a background image and related .csv or .bundle file to begin
+(Alternatively, press q to load an example file)
