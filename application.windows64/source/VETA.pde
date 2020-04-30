@@ -1,3 +1,4 @@
+// VETA 0.27
 import processing.video.*;
 import static org.jocl.CL.*;
 import static java.lang.System.*;
@@ -36,6 +37,7 @@ float BRIEF_MIN = 100; // length below which saccades are classed as short
 int COL_MODE = 0; // 0 = no colouring, 1 = by type, 2 = by angle (effects bundling rules similarly)
 float BIG_K = 0.05; // 0.05 is I think an appropriate choice, until I next modify the other bundling parameters. But for more crowded screens, higher is needed.
 boolean lmp = false, rmp = false; // (track whether left or right mouse is currently held down)
+int dval = -1; int gval = -1; int aval = -1; // control the mouse-over-legend filtering functionality
 
 //Colouring and other graphical features
 color c1(float a){return color(17,100, 80,a);} // glances - background
@@ -45,12 +47,13 @@ color o1(float a){return color( 0, 60, 60,a);} // before - foreground
 color o2(float a){return color(17, 60,100,a);} // glances - foreground
 color o3(float a){return color(40,100, 80,a);} // after - foreground
 color cy(float a, float type){return color((50 + (type*100*PHI))%100, 100, 80, a);} // colours based on data-defined type value
+boolean wheel_test(float x){ return dval==-1 || (COL_MODE==2 && floor(4 + (8*x)/TWO_PI + 0.5)%8==dval); }
 color color_wheel(float a, float x){ return color( ((floor(((PI+x)*8)/TWO_PI + 0.5)) * 12.5) % 100, 100, 80, a); }
 color white(float a){return color(0, 0,100, a);} // plain white
 color  grey(float a){return color(0, 0, 50, a);} // plain grey, used for out-of-filter time marks
 color black(float a){return color(0, 0,  0, a);} // plain black
 int[] sws = new int[] {2,4,8,12},  divs = new int[] {1,6,10,14}; // used in the node_curve alpha edge splattering
-PFont  f; // the font used for general text writing applications. defined in setup
+PFont  f; PFont  fb; // the font used for general text writing applications. defined in setup
 
 void setup(){
   size(1700, 1000, P2D);
@@ -59,12 +62,13 @@ void setup(){
   for(int i=0;i<4;i++){Frames[i] = new Frame(i);}
   controller = new ControlWindow();
   colorMode(HSB, 100);
-  f = createFont("Arial",12,true);
+  f = createFont("Arial",12,true); fb = createFont("Arial",22,true);
   println("ready", sketchFile(""), height, width);
 }
 void draw(){
   background(black(100)); //print(frameRate, ' ');
   MainFrame = Frames[selected_frame];
+  check_mouse();
   if(!show_all){ Frames[selected_frame].draw(); image(MainFrame.base, 0, 0); if(GENERAL || ALTERNATE){Frames[selected_frame].FILTER.connectors();}}
   else{
     for(int i=0;i<4;i++){
@@ -77,4 +81,32 @@ void draw(){
   MainFrame.FILTER.filtered_timeline();
   MainFrame.TIME.draw(); // draw the timelines
   controller.draw(); // should exist even in movie mode, since it has the button
+}
+
+void check_mouse(){
+  boolean changed = false;
+  float cx = mouseX - width + 125, cy = mouseY-425;
+  if(!controller.isOpen){changed = dval!=-1; dval=-1;
+  //}else if(COL_MODE==1){
+  //  float cx = mouseX - width + 125, cy = mouseY-425;
+  //  if(min(cx,cy)<0 || max(cx,cy)<100){ changed=dval!=-1;dval=-1;}
+  //  else{
+  //    int r = floor((cy+25)/34);
+  //    changed = dval!=r;dval = r;
+  //  }
+  }else if(COL_MODE==2 && abs(cx)<25 && abs(cy)<25){
+    float x = atan2(cy, cx);
+    int r = floor(4 + (8*x)/TWO_PI + 0.5)%8;
+    changed = dval!=r;dval = r;
+  }else{ changed=dval!=-1;dval=-1;}
+  
+  if(controller.isOpen && abs(cx-50)<25 && abs(cy)<25){
+    int r = 2+floor((cy+25)/17);
+    if(GENERAL && (cx-50 < 0 || !ALTERNATE)){ changed|=gval!=r; gval = r; aval=0; }
+    else                                    { changed|=aval!=r; aval = r; gval=0; }
+  }else{ changed|= gval!=-1 || aval!=-1; gval = -1; aval=-1;}
+  
+  if(changed && gval+aval > -2){println("found:", gval, aval);}
+  
+  MainFrame.lower.has_changed |= changed;
 }

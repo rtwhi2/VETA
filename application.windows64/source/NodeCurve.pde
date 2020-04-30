@@ -46,6 +46,7 @@ class NodeCurve{
   }
   void prev(NodeCurve prev){this.prev = prev; altc=true;}
   void next(NodeCurve next){this.next = next; altc=true;}
+  boolean do_wheel_test(){return wheel_test(atan2(ys[ys.length-1]-y1, xs[xs.length-1] - x1));}
   
   void make_content(){
     content = new PShape[4];

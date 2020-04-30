@@ -93,8 +93,10 @@ void saveBundle(String selectedFile){
   catch (Exception e) { e.printStackTrace(); return; }
   writer.println("x,y,l,t,dt");
   // x, y, l, t, dt (last two zero except at locked nodes?)
-  for(NodeCurve n : MainFrame.node_curves){
-    printrow(writer, n.x1, n.y1, 1, n.t, n.dt, n.type);
+  for(int j=0;j<MainFrame.node_curves.size();j++){
+    Node nv = MainFrame.nodes.get(j);
+    NodeCurve n = MainFrame.node_curves.get(j);
+    printrow(writer, n.x1, n.y1, 1, nv.t, nv.dt, n.type);
     for(int i=0; i<n.xs.length;i++){
       printrow(writer, n.xs[i], n.ys[i], 0,0,0,0);
     }

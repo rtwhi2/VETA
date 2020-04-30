@@ -22,6 +22,7 @@ import java.io.IOException;
 
 public class VETA extends PApplet {
 
+// VETA 0.27
 
 
 
@@ -60,6 +61,7 @@ float BRIEF_MIN = 100; // length below which saccades are classed as short
 int COL_MODE = 0; // 0 = no colouring, 1 = by type, 2 = by angle (effects bundling rules similarly)
 float BIG_K = 0.05f; // 0.05 is I think an appropriate choice, until I next modify the other bundling parameters. But for more crowded screens, higher is needed.
 boolean lmp = false, rmp = false; // (track whether left or right mouse is currently held down)
+int dval = -1; int gval = -1; int aval = -1; // control the mouse-over-legend filtering functionality
 
 //Colouring and other graphical features
 public int c1(float a){return color(17,100, 80,a);} // glances - background
@@ -69,12 +71,13 @@ public int o1(float a){return color( 0, 60, 60,a);} // before - foreground
 public int o2(float a){return color(17, 60,100,a);} // glances - foreground
 public int o3(float a){return color(40,100, 80,a);} // after - foreground
 public int cy(float a, float type){return color((50 + (type*100*PHI))%100, 100, 80, a);} // colours based on data-defined type value
+public boolean wheel_test(float x){ return dval==-1 || (COL_MODE==2 && floor(4 + (8*x)/TWO_PI + 0.5f)%8==dval); }
 public int color_wheel(float a, float x){ return color( ((floor(((PI+x)*8)/TWO_PI + 0.5f)) * 12.5f) % 100, 100, 80, a); }
 public int white(float a){return color(0, 0,100, a);} // plain white
 public int  grey(float a){return color(0, 0, 50, a);} // plain grey, used for out-of-filter time marks
 public int black(float a){return color(0, 0,  0, a);} // plain black
 int[] sws = new int[] {2,4,8,12},  divs = new int[] {1,6,10,14}; // used in the node_curve alpha edge splattering
-PFont  f; // the font used for general text writing applications. defined in setup
+PFont  f; PFont  fb; // the font used for general text writing applications. defined in setup
 
 public void setup(){
   
@@ -83,12 +86,13 @@ public void setup(){
   for(int i=0;i<4;i++){Frames[i] = new Frame(i);}
   controller = new ControlWindow();
   colorMode(HSB, 100);
-  f = createFont("Arial",12,true);
+  f = createFont("Arial",12,true); fb = createFont("Arial",22,true);
   println("ready", sketchFile(""), height, width);
 }
 public void draw(){
   background(black(100)); //print(frameRate, ' ');
   MainFrame = Frames[selected_frame];
+  check_mouse();
   if(!show_all){ Frames[selected_frame].draw(); image(MainFrame.base, 0, 0); if(GENERAL || ALTERNATE){Frames[selected_frame].FILTER.connectors();}}
   else{
     for(int i=0;i<4;i++){
@@ -101,6 +105,34 @@ public void draw(){
   MainFrame.FILTER.filtered_timeline();
   MainFrame.TIME.draw(); // draw the timelines
   controller.draw(); // should exist even in movie mode, since it has the button
+}
+
+public void check_mouse(){
+  boolean changed = false;
+  float cx = mouseX - width + 125, cy = mouseY-425;
+  if(!controller.isOpen){changed = dval!=-1; dval=-1;
+  //}else if(COL_MODE==1){
+  //  float cx = mouseX - width + 125, cy = mouseY-425;
+  //  if(min(cx,cy)<0 || max(cx,cy)<100){ changed=dval!=-1;dval=-1;}
+  //  else{
+  //    int r = floor((cy+25)/34);
+  //    changed = dval!=r;dval = r;
+  //  }
+  }else if(COL_MODE==2 && abs(cx)<25 && abs(cy)<25){
+    float x = atan2(cy, cx);
+    int r = floor(4 + (8*x)/TWO_PI + 0.5f)%8;
+    changed = dval!=r;dval = r;
+  }else{ changed=dval!=-1;dval=-1;}
+  
+  if(controller.isOpen && abs(cx-50)<25 && abs(cy)<25){
+    int r = 2+floor((cy+25)/17);
+    if(GENERAL && (cx-50 < 0 || !ALTERNATE)){ changed|=gval!=r; gval = r; aval=0; }
+    else                                    { changed|=aval!=r; aval = r; gval=0; }
+  }else{ changed|= gval!=-1 || aval!=-1; gval = -1; aval=-1;}
+  
+  if(changed && gval+aval > -2){println("found:", gval, aval);}
+  
+  MainFrame.lower.has_changed |= changed;
 }
 class ControlWindow{
   boolean isOpen = true;
@@ -180,8 +212,7 @@ class ControlWindow{
     fill(k2);rect(wx+ 50, wy+350, 50, 50); fill(k1);text("Delete\nInside",                                     wx+ 52,wy+375); // no conditional, just have as black
     fill(k2);rect(wx+100, wy+350, 50, 50); fill(k1);text("Delete\nOutside",                                    wx+102,wy+375); // no conditional, just have as black
     
-    if(COL_MODE==0){
-      //text("No\nColouring", wx+ 2, wy+420);
+    if(COL_MODE==0){ // makes the legend, depending on the current colour mode
       strokeWeight(5); strokeCap(SQUARE);
       stroke(c3(100));line(wx+2, wy+405, wx+10, wy+405); text("Short",  wx+11, wy+408);
       stroke(c2(100));line(wx+2, wy+420, wx+10, wy+420); text("Long", wx+11, wy+423);
@@ -192,15 +223,35 @@ class ControlWindow{
       stroke(c2(100));line(wx+2, wy+435, wx+10, wy+435); text("Normal", wx+11, wy+438);
     }else if(COL_MODE==2){
       strokeWeight(1);
-      for(float i=0;i<1;i+=0.005f){stroke(color_wheel(100, PI + i*TWO_PI));
+      for(float i=0;i<1;i+=0.005f){
+                             float alpha = 100;//if(dval>-1 && dval!=floor(i*8)){ alpha = 40; }
+                             if(!wheel_test(atan2(sin(i*TWO_PI), cos(i*TWO_PI)))){ alpha = 40; }
+                             stroke(color_wheel(alpha, PI + i*TWO_PI));
                              line(wx+25+10*cos(i*TWO_PI), wy+425+10*sin(i*TWO_PI), wx+25+20*cos(i*TWO_PI), wy+425+20*sin(i*TWO_PI));
       }
     }else if(COL_MODE==3){
       text("Custom\nColouring", wx+ 2, wy+420);
     }
+    if(GENERAL || ALTERNATE){
+      text("Glance", wx+53, wy+408);
+      text("Before", wx+55, wy+423);
+      text("After",  wx+60, wy+438);
+      noStroke();
+      if(GENERAL){
+        if(gval==-1 || gval==2){ fill(o2(90)); ellipse(wx+50, wy+404, 6, 6);}
+        if(gval==-1 || gval==3){ fill(o1(90)); ellipse(wx+50, wy+419, 6, 6);}
+        if(gval==-1 || gval==4){ fill(o3(90)); ellipse(wx+50, wy+434, 6, 6);}
+      }
+      strokeWeight(2);
+      if(ALTERNATE){
+        if(aval==-1 || aval==2){ stroke(o2(90)); line(wx+90, wy+402, wx+96, wy+406);line(wx+96, wy+402, wx+90, wy+406);}
+        if(aval==-1 || aval==3){ stroke(o1(90)); line(wx+90, wy+417, wx+96, wy+421);line(wx+96, wy+417, wx+90, wy+421);}
+        if(aval==-1 || aval==4){ stroke(o3(90)); line(wx+90, wy+432, wx+96, wy+436);line(wx+96, wy+432, wx+90, wy+436);}
+      }
+    }
     strokeWeight(2); noStroke();
-    if(show_all)            {fill(k1);rect(wx+ 50,wy+400, 50, 50); fill(k2);text("Show\nMultiple",    wx+ 52,wy+425);}
-    else{                    fill(k2);rect(wx+ 50,wy+400, 50, 50); fill(k1);text("Show\nMultiple",    wx+ 52,wy+425);}
+    if(show_all)            {fill(k1);rect(wx+100,wy+400, 50, 50); fill(k2);text("Show\nMultiple",    wx+102,wy+425);}
+    else{                    fill(k2);rect(wx+100,wy+400, 50, 50); fill(k1);text("Show\nMultiple",    wx+102,wy+425);}
     //fill(k2);rect(wx+100, wy+50, 50, 50); fill(k1);text("Alt Time\n "+ String.format("%.0f", ALT_TIME_WINDOW),wx+102,wy+75);
     
     // settings menu, 3 guys tall
@@ -256,9 +307,9 @@ class ControlWindow{
       else if(width-mouseX >  50){MainFrame.delete(true); MainFrame.process();}
       else if(width-mouseX >   0){MainFrame.delete(false); MainFrame.process();}
     }else if(mouseY < 450){ 
-      if     (width-mouseX > 100){ COL_MODE = (COL_MODE+1)%4; for(NodeCurve n : MainFrame.node_curves){n.apply_color();} }
-      if     (width-mouseX >  50){ show_all^=true; }
-      else if(width-mouseX >   0){}
+      if     (width-mouseX > 100){}// COL_MODE = (COL_MODE+1)%4; for(NodeCurve n : MainFrame.node_curves){n.apply_color();} }
+      else if(width-mouseX >  50){  }
+      else if(width-mouseX >   0){ show_all^=true; }
     }
     else if (mouseY > height-450 && mouseY < height-150){ // miniscreen area
       int x = (mouseY - height + 450)/100 + view_place; // id of the miniscreen clicked on
@@ -404,7 +455,8 @@ class Filter{ // capsule for all the filtering behavior
       }else if(mode==3 || mode==4){
         boolean has_left=false; boolean has_right=false; boolean has_in=false;
         for(int r : results){
-          if(r==1){has_in=true;}
+
+        if(r==1){has_in=true;}
           else if(r==2){has_left=true;has_right=true;}
           else if(r==3){has_left=true;}
           else if(r==4){has_right=true;}
@@ -425,18 +477,20 @@ class Filter{ // capsule for all the filtering behavior
     if(tval>0){
       if(THIST||PHIST){f.timeHist(inst, tval, isgen);}
       else{f.lensHist(inst, tval, isgen);}
-    }else{ // draw normally
-      for(int i=0;i<f.nodes.size();i++){
+    }
+    // draw normally
+    for(int i=0;i<f.nodes.size();i++){
+      if( tval<=0  || inst.get(i)==1){
         if(isgen){ f.nodes.get(i).draw_self(inst.get(i), 0); }
         else{ f.nodes.get(i).draw_self(inst.get(i), 1); }
-        if(TRAVEL_LINES && inst.get(i)==3 && inst.get(i+1)==1){ // the Travel lines
-          int k = i+1; strokeWeight(2);
-          while(k<f.nodes.size() && (inst.get(k)==1 || inst.get(k)==2) ){k++;}
-          if(k<f.nodes.size() && inst.get(k)==4){
-            Node ni = f.nodes.get(i); Node nk = f.nodes.get(k);
-            f.base.stroke(o1(60)); f.base.line(ni.x, ni.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
-            f.base.stroke(o3(60)); f.base.line(nk.x, nk.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
-          }
+      }
+      if(TRAVEL_LINES && inst.get(i)==3 && inst.get(i+1)==1){ // the Travel lines
+        int k = i+1; strokeWeight(2);
+        while(k<f.nodes.size() && (inst.get(k)==1 || inst.get(k)==2) ){k++;}
+        if(k<f.nodes.size() && inst.get(k)==4){
+          Node ni = f.nodes.get(i); Node nk = f.nodes.get(k);
+          f.base.stroke(o1(60)); f.base.line(ni.x, ni.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
+          f.base.stroke(o3(60)); f.base.line(nk.x, nk.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
         }
       }
     }
@@ -469,7 +523,7 @@ class Filter{ // capsule for all the filtering behavior
     for(NodeCurve n : f.node_curves){if(n.active){n.time_mark();}} // time marks hide behind the timeline
   }
   public void connectors(){
-    if(inst.size()<f.nodes.size()){println(inst.size(), f.nodes.size()); return;}
+    if(inst.size()<f.nodes.size()){/*println(inst.size(), f.nodes.size());*/ return;}
     strokeWeight(2);
     for(int i=0;i<f.nodes.size();i++){
       int val = inst.get(i);
@@ -868,7 +922,8 @@ class Lens{
     }
     float t_inside=0, t_total = 0;
     for(Node n: f.nodes){ if(f.TIME.within(n.t)){t_total+=n.dt; if(inside(n.x,n.y)){t_inside+=n.dt;}} }
-    f.base.fill(white(100)); f.base.text( String.format("%.02f", (100*t_inside/t_total))+"%", mX-15, mY + WINDOW*exp(FACTOR)/2 - 10);
+    f.base.fill(white(100)); f.base.textFont(fb);
+    //f.base.text( String.format("%.02f", (100*t_inside/t_total))+"%", mX-15, mY + WINDOW*exp(FACTOR)/2 - 10);
   }
   // whether an untransformed point is inside the lens shape
   public boolean inside(float x, float y){
@@ -964,14 +1019,14 @@ class LowerLayer{
     }}
     // shows the background saccade lines, depending on the filtering
     for(NodeCurve n : f.node_curves){
-      if( n.active && n.dist<BRIEF_MIN ){ // draws the short saccades first, so that they can form a background for context
+      if( n.active && n.dist<BRIEF_MIN && n.do_wheel_test() ){ // draws the short saccades first, so that they can form a background for context
         base.stroke(n.get_color(25)); base.strokeWeight(2);
         base.line(n.x1, n.y1, n.xs[n.xs.length-1], n.ys[n.ys.length-1]);
       }
     }
     if(!ANIMATE){
       for(NodeCurve n : f.node_curves){ // then draws the longer saccades on top of them
-        if( n.active && n.dist>=BRIEF_MIN ){
+        if( n.active && n.dist>=BRIEF_MIN && n.do_wheel_test() ){
           for(PShape i : n.content){base.shape(i);}
         }
       }
@@ -1022,6 +1077,8 @@ class Node{
     else if(inst==2){f.base.fill(o2(80));f.base.stroke(o2(80));}//orange
     else if(inst==3){f.base.fill(o1(80));f.base.stroke(o1(80));}//red
     else if(inst==4){f.base.fill(o3(80));f.base.stroke(o3(80));}//green
+    if(symbol==0 && gval!=-1 && inst!=gval){return;} // not the mouse-over foreground colour
+    if(symbol==1 && aval!=-1 && inst!=aval){return;} // not the mouse-over foreground colour
     
     if(INTERLACE & ALTERNATE & symbol==1){//draw in the interlacing lines
       f.base.strokeWeight(2);
@@ -1044,7 +1101,6 @@ class Node{
     else if(inst==1){fill(white(100));stroke(white(100));}//white
     else if(inst==2){fill(o2(80));stroke(o2(80));}//orange
     else if(inst==3){fill(o1(80));stroke(o1(80));}//red
-    else if(inst==4){fill(o3(80));stroke(o3(80));}//green
     
     float vt = (t-f.TIME.Tmin)*TWIDTH/(f.TIME.Tmax - f.TIME.Tmin);
     float t_width = dt*TWIDTH/(f.TIME.Tmax - f.TIME.Tmin);
@@ -1060,6 +1116,8 @@ class Node{
     else if(inst==2){f.base.fill(o2(80));f.base.stroke(o2(80));}//orange
     else if(inst==3){f.base.fill(o1(80));f.base.stroke(o1(80));}//red
     else if(inst==4){f.base.fill(o3(80));f.base.stroke(o3(80));}//green
+    if(symbol==0 && gval!=-1 && inst!=gval){return;} // not the mouse-over foreground colour
+    if(symbol==1 && aval!=-1 && inst!=aval){return;} // not the mouse-over foreground colour
     
     float td = (t-f.TIME.Tmin)/(f.TIME.Tmax-f.TIME.Tmin);
     int bin = floor(BINS*td); println(bin, td, f.TIME.Tmin, t, f.TIME.Tmax);
@@ -1082,6 +1140,8 @@ class Node{
     else if(inst==2){f.base.fill(o2(80));f.base.stroke(o2(80));}//orange
     else if(inst==3){f.base.fill(o1(80));f.base.stroke(o1(80));}//red
     else if(inst==4){f.base.fill(o3(80));f.base.stroke(o3(80));}//green
+    if(symbol==0 && gval!=-1 && inst!=gval){return;} // not the mouse-over foreground colour
+    if(symbol==1 && aval!=-1 && inst!=aval){return;} // not the mouse-over foreground colour
     
     float td = (t-f.TIME.Tmin)/(f.TIME.Tmax-f.TIME.Tmin);
     Lens l = f.FILTER.Lenses.get(f.FILTER.selected);
@@ -1147,6 +1207,7 @@ class NodeCurve{
   }
   public void prev(NodeCurve prev){this.prev = prev; altc=true;}
   public void next(NodeCurve next){this.next = next; altc=true;}
+  public boolean do_wheel_test(){return wheel_test(atan2(ys[ys.length-1]-y1, xs[xs.length-1] - x1));}
   
   public void make_content(){
     content = new PShape[4];
@@ -1337,6 +1398,7 @@ public void keyPressed() {
     MainFrame.notes.note_key(); 
     return;
   }
+  else if (key == 's') { saveStuff(); }
   // ZOOMING
   else if (key == '+') { 
     if (mouseY<height-100) {
@@ -1566,8 +1628,10 @@ public void saveBundle(String selectedFile){
   catch (Exception e) { e.printStackTrace(); return; }
   writer.println("x,y,l,t,dt");
   // x, y, l, t, dt (last two zero except at locked nodes?)
-  for(NodeCurve n : MainFrame.node_curves){
-    printrow(writer, n.x1, n.y1, 1, n.t, n.dt, n.type);
+  for(int j=0;j<MainFrame.node_curves.size();j++){
+    Node nv = MainFrame.nodes.get(j);
+    NodeCurve n = MainFrame.node_curves.get(j);
+    printrow(writer, n.x1, n.y1, 1, nv.t, nv.dt, n.type);
     for(int i=0; i<n.xs.length;i++){
       printrow(writer, n.xs[i], n.ys[i], 0,0,0,0);
     }

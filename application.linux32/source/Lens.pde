@@ -36,7 +36,8 @@ class Lens{
     }
     float t_inside=0, t_total = 0;
     for(Node n: f.nodes){ if(f.TIME.within(n.t)){t_total+=n.dt; if(inside(n.x,n.y)){t_inside+=n.dt;}} }
-    f.base.fill(white(100)); f.base.text( String.format("%.02f", (100*t_inside/t_total))+"%", mX-15, mY + WINDOW*exp(FACTOR)/2 - 10);
+    f.base.fill(white(100)); f.base.textFont(fb);
+    //f.base.text( String.format("%.02f", (100*t_inside/t_total))+"%", mX-15, mY + WINDOW*exp(FACTOR)/2 - 10);
   }
   // whether an untransformed point is inside the lens shape
   boolean inside(float x, float y){

@@ -38,14 +38,14 @@ class LowerLayer{
     }}
     // shows the background saccade lines, depending on the filtering
     for(NodeCurve n : f.node_curves){
-      if( n.active && n.dist<BRIEF_MIN ){ // draws the short saccades first, so that they can form a background for context
+      if( n.active && n.dist<BRIEF_MIN && n.do_wheel_test() ){ // draws the short saccades first, so that they can form a background for context
         base.stroke(n.get_color(25)); base.strokeWeight(2);
         base.line(n.x1, n.y1, n.xs[n.xs.length-1], n.ys[n.ys.length-1]);
       }
     }
     if(!ANIMATE){
       for(NodeCurve n : f.node_curves){ // then draws the longer saccades on top of them
-        if( n.active && n.dist>=BRIEF_MIN ){
+        if( n.active && n.dist>=BRIEF_MIN && n.do_wheel_test() ){
           for(PShape i : n.content){base.shape(i);}
         }
       }

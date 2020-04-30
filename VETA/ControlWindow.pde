@@ -76,8 +76,7 @@ class ControlWindow{
     fill(k2);rect(wx+ 50, wy+350, 50, 50); fill(k1);text("Delete\nInside",                                     wx+ 52,wy+375); // no conditional, just have as black
     fill(k2);rect(wx+100, wy+350, 50, 50); fill(k1);text("Delete\nOutside",                                    wx+102,wy+375); // no conditional, just have as black
     
-    if(COL_MODE==0){
-      //text("No\nColouring", wx+ 2, wy+420);
+    if(COL_MODE==0){ // makes the legend, depending on the current colour mode
       strokeWeight(5); strokeCap(SQUARE);
       stroke(c3(100));line(wx+2, wy+405, wx+10, wy+405); text("Short",  wx+11, wy+408);
       stroke(c2(100));line(wx+2, wy+420, wx+10, wy+420); text("Long", wx+11, wy+423);
@@ -88,15 +87,35 @@ class ControlWindow{
       stroke(c2(100));line(wx+2, wy+435, wx+10, wy+435); text("Normal", wx+11, wy+438);
     }else if(COL_MODE==2){
       strokeWeight(1);
-      for(float i=0;i<1;i+=0.005){stroke(color_wheel(100, PI + i*TWO_PI));
+      for(float i=0;i<1;i+=0.005){
+                             float alpha = 100;//if(dval>-1 && dval!=floor(i*8)){ alpha = 40; }
+                             if(!wheel_test(atan2(sin(i*TWO_PI), cos(i*TWO_PI)))){ alpha = 40; }
+                             stroke(color_wheel(alpha, PI + i*TWO_PI));
                              line(wx+25+10*cos(i*TWO_PI), wy+425+10*sin(i*TWO_PI), wx+25+20*cos(i*TWO_PI), wy+425+20*sin(i*TWO_PI));
       }
     }else if(COL_MODE==3){
       text("Custom\nColouring", wx+ 2, wy+420);
     }
+    if(GENERAL || ALTERNATE){
+      text("Glance", wx+53, wy+408);
+      text("Before", wx+55, wy+423);
+      text("After",  wx+60, wy+438);
+      noStroke();
+      if(GENERAL){
+        if(gval==-1 || gval==2){ fill(o2(90)); ellipse(wx+50, wy+404, 6, 6);}
+        if(gval==-1 || gval==3){ fill(o1(90)); ellipse(wx+50, wy+419, 6, 6);}
+        if(gval==-1 || gval==4){ fill(o3(90)); ellipse(wx+50, wy+434, 6, 6);}
+      }
+      strokeWeight(2);
+      if(ALTERNATE){
+        if(aval==-1 || aval==2){ stroke(o2(90)); line(wx+90, wy+402, wx+96, wy+406);line(wx+96, wy+402, wx+90, wy+406);}
+        if(aval==-1 || aval==3){ stroke(o1(90)); line(wx+90, wy+417, wx+96, wy+421);line(wx+96, wy+417, wx+90, wy+421);}
+        if(aval==-1 || aval==4){ stroke(o3(90)); line(wx+90, wy+432, wx+96, wy+436);line(wx+96, wy+432, wx+90, wy+436);}
+      }
+    }
     strokeWeight(2); noStroke();
-    if(show_all)            {fill(k1);rect(wx+ 50,wy+400, 50, 50); fill(k2);text("Show\nMultiple",    wx+ 52,wy+425);}
-    else{                    fill(k2);rect(wx+ 50,wy+400, 50, 50); fill(k1);text("Show\nMultiple",    wx+ 52,wy+425);}
+    if(show_all)            {fill(k1);rect(wx+100,wy+400, 50, 50); fill(k2);text("Show\nMultiple",    wx+102,wy+425);}
+    else{                    fill(k2);rect(wx+100,wy+400, 50, 50); fill(k1);text("Show\nMultiple",    wx+102,wy+425);}
     //fill(k2);rect(wx+100, wy+50, 50, 50); fill(k1);text("Alt Time\n "+ String.format("%.0f", ALT_TIME_WINDOW),wx+102,wy+75);
     
     // settings menu, 3 guys tall
@@ -152,9 +171,9 @@ class ControlWindow{
       else if(width-mouseX >  50){MainFrame.delete(true); MainFrame.process();}
       else if(width-mouseX >   0){MainFrame.delete(false); MainFrame.process();}
     }else if(mouseY < 450){ 
-      if     (width-mouseX > 100){ COL_MODE = (COL_MODE+1)%4; for(NodeCurve n : MainFrame.node_curves){n.apply_color();} }
-      if     (width-mouseX >  50){ show_all^=true; }
-      else if(width-mouseX >   0){}
+      if     (width-mouseX > 100){}// COL_MODE = (COL_MODE+1)%4; for(NodeCurve n : MainFrame.node_curves){n.apply_color();} }
+      else if(width-mouseX >  50){  }
+      else if(width-mouseX >   0){ show_all^=true; }
     }
     else if (mouseY > height-450 && mouseY < height-150){ // miniscreen area
       int x = (mouseY - height + 450)/100 + view_place; // id of the miniscreen clicked on

@@ -112,7 +112,8 @@ class Filter{ // capsule for all the filtering behavior
       }else if(mode==3 || mode==4){
         boolean has_left=false; boolean has_right=false; boolean has_in=false;
         for(int r : results){
-          if(r==1){has_in=true;}
+
+        if(r==1){has_in=true;}
           else if(r==2){has_left=true;has_right=true;}
           else if(r==3){has_left=true;}
           else if(r==4){has_right=true;}
@@ -133,18 +134,20 @@ class Filter{ // capsule for all the filtering behavior
     if(tval>0){
       if(THIST||PHIST){f.timeHist(inst, tval, isgen);}
       else{f.lensHist(inst, tval, isgen);}
-    }else{ // draw normally
-      for(int i=0;i<f.nodes.size();i++){
+    }
+    // draw normally
+    for(int i=0;i<f.nodes.size();i++){
+      if( tval<=0  || inst.get(i)==1){
         if(isgen){ f.nodes.get(i).draw_self(inst.get(i), 0); }
         else{ f.nodes.get(i).draw_self(inst.get(i), 1); }
-        if(TRAVEL_LINES && inst.get(i)==3 && inst.get(i+1)==1){ // the Travel lines
-          int k = i+1; strokeWeight(2);
-          while(k<f.nodes.size() && (inst.get(k)==1 || inst.get(k)==2) ){k++;}
-          if(k<f.nodes.size() && inst.get(k)==4){
-            Node ni = f.nodes.get(i); Node nk = f.nodes.get(k);
-            f.base.stroke(o1(60)); f.base.line(ni.x, ni.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
-            f.base.stroke(o3(60)); f.base.line(nk.x, nk.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
-          }
+      }
+      if(TRAVEL_LINES && inst.get(i)==3 && inst.get(i+1)==1){ // the Travel lines
+        int k = i+1; strokeWeight(2);
+        while(k<f.nodes.size() && (inst.get(k)==1 || inst.get(k)==2) ){k++;}
+        if(k<f.nodes.size() && inst.get(k)==4){
+          Node ni = f.nodes.get(i); Node nk = f.nodes.get(k);
+          f.base.stroke(o1(60)); f.base.line(ni.x, ni.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
+          f.base.stroke(o3(60)); f.base.line(nk.x, nk.y, (ni.x+nk.x)/2, (ni.y+nk.y)/2);
         }
       }
     }
@@ -177,7 +180,7 @@ class Filter{ // capsule for all the filtering behavior
     for(NodeCurve n : f.node_curves){if(n.active){n.time_mark();}} // time marks hide behind the timeline
   }
   void connectors(){
-    if(inst.size()<f.nodes.size()){println(inst.size(), f.nodes.size()); return;}
+    if(inst.size()<f.nodes.size()){/*println(inst.size(), f.nodes.size());*/ return;}
     strokeWeight(2);
     for(int i=0;i<f.nodes.size();i++){
       int val = inst.get(i);

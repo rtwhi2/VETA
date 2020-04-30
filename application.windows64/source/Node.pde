@@ -40,6 +40,8 @@ class Node{
     else if(inst==2){f.base.fill(o2(80));f.base.stroke(o2(80));}//orange
     else if(inst==3){f.base.fill(o1(80));f.base.stroke(o1(80));}//red
     else if(inst==4){f.base.fill(o3(80));f.base.stroke(o3(80));}//green
+    if(symbol==0 && gval!=-1 && inst!=gval){return;} // not the mouse-over foreground colour
+    if(symbol==1 && aval!=-1 && inst!=aval){return;} // not the mouse-over foreground colour
     
     if(INTERLACE & ALTERNATE & symbol==1){//draw in the interlacing lines
       f.base.strokeWeight(2);
@@ -62,7 +64,6 @@ class Node{
     else if(inst==1){fill(white(100));stroke(white(100));}//white
     else if(inst==2){fill(o2(80));stroke(o2(80));}//orange
     else if(inst==3){fill(o1(80));stroke(o1(80));}//red
-    else if(inst==4){fill(o3(80));stroke(o3(80));}//green
     
     float vt = (t-f.TIME.Tmin)*TWIDTH/(f.TIME.Tmax - f.TIME.Tmin);
     float t_width = dt*TWIDTH/(f.TIME.Tmax - f.TIME.Tmin);
@@ -78,6 +79,8 @@ class Node{
     else if(inst==2){f.base.fill(o2(80));f.base.stroke(o2(80));}//orange
     else if(inst==3){f.base.fill(o1(80));f.base.stroke(o1(80));}//red
     else if(inst==4){f.base.fill(o3(80));f.base.stroke(o3(80));}//green
+    if(symbol==0 && gval!=-1 && inst!=gval){return;} // not the mouse-over foreground colour
+    if(symbol==1 && aval!=-1 && inst!=aval){return;} // not the mouse-over foreground colour
     
     float td = (t-f.TIME.Tmin)/(f.TIME.Tmax-f.TIME.Tmin);
     int bin = floor(BINS*td); println(bin, td, f.TIME.Tmin, t, f.TIME.Tmax);
@@ -100,6 +103,8 @@ class Node{
     else if(inst==2){f.base.fill(o2(80));f.base.stroke(o2(80));}//orange
     else if(inst==3){f.base.fill(o1(80));f.base.stroke(o1(80));}//red
     else if(inst==4){f.base.fill(o3(80));f.base.stroke(o3(80));}//green
+    if(symbol==0 && gval!=-1 && inst!=gval){return;} // not the mouse-over foreground colour
+    if(symbol==1 && aval!=-1 && inst!=aval){return;} // not the mouse-over foreground colour
     
     float td = (t-f.TIME.Tmin)/(f.TIME.Tmax-f.TIME.Tmin);
     Lens l = f.FILTER.Lenses.get(f.FILTER.selected);

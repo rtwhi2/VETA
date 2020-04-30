@@ -6,6 +6,7 @@ void keyPressed() {
     MainFrame.notes.note_key(); 
     return;
   }
+  else if (key == 's') { saveStuff(); }
   // ZOOMING
   else if (key == '+') { 
     if (mouseY<height-100) {
